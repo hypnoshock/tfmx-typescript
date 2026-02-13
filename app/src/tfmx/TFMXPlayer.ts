@@ -1283,10 +1283,10 @@ export class TFMXPlayer {
         }
       }
 
-      // Build per-track channel volumes: for each of the 7 channels,
+      // Build per-track channel volumes: for each of the 8 channels,
       // include the hardware volume only if this track owns that channel
       const channelVolumes: number[] = [];
-      for (let ch = 0; ch < 7; ch++) {
+      for (let ch = 0; ch < 8; ch++) {
         if (this.channelOwnerTrack[ch] === i) {
           channelVolumes.push(Math.min(this.hdb[ch].vol, 0x40));
         } else {

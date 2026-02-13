@@ -58,6 +58,7 @@ function decodeEntry(raw: number, step: number): PatternEntry {
     const noteName = getNoteName(t);
     const macro = hex2(x.b1);
     const vol = ((x.b2 >> 4) & 0xF).toString(16).toUpperCase();
+    const channel = x.b2 & 0xF;
 
     if (t < 0x80) {
       // Immediate note (no wait), b3 = detune
@@ -65,7 +66,7 @@ function decodeEntry(raw: number, step: number): PatternEntry {
     } else if (t < 0xC0) {
       // Note with wait, b3 = wait count
       const wait = hex2(x.b3);
-      return { step, display: `${noteName} M:${macro} V:${vol} W:${wait}`, type: 'note-wait', isEnd: false };
+      return { step, display: `${noteName} M:${macro} V:${vol} W:${wait} C:${channel}`, type: 'note-wait', isEnd: false };
     } else {
       // Portamento note, b3 = rate
       const rate = hex2(x.b3);

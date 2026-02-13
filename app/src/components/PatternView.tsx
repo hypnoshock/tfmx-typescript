@@ -7,7 +7,7 @@ const VISIBLE_ROWS = 17;
 const ROW_HEIGHT = 18;
 const CENTER_ROW = Math.floor(VISIBLE_ROWS / 2);
 const VIEW_HEIGHT = VISIBLE_ROWS * ROW_HEIGHT;
-const NUM_CHANNELS = 7;
+const NUM_CHANNELS = 8;
 const EMPTY_VOLUMES = Array(NUM_CHANNELS).fill(0);
 
 // Channel indicator color palette (one hue per channel)
@@ -19,6 +19,7 @@ const CHANNEL_COLORS = [
   [ 60, 180, 255],  // ch4 - blue
   [160, 100, 255],  // ch5 - purple
   [255, 100, 200],  // ch6 - pink
+  [255, 255, 255],  // ch7 - white
 ];
 
 interface PatternViewProps {
