@@ -40,9 +40,6 @@ export class TFMXAudio {
   private filterStateL = 0;
   private filterStateR = 0;
 
-  // Channel muting (8 hardware channels)
-  private channelMuted: boolean[] = Array(8).fill(false);
-
   private _paused = true;
   private _hasPlayed = false;
 
@@ -70,26 +67,29 @@ export class TFMXAudio {
   }
 
   /**
-   * Mute or unmute a hardware channel (0-7).
+   * Mute or unmute a track (0-7).
+   * Track-level muting suppresses notePort() calls in the player engine
+   * so the track's pattern still runs (keeping timing correct) but no
+   * sound is triggered.
    */
-  setChannelMuted(channel: number, muted: boolean): void {
-    if (channel >= 0 && channel < 8) {
-      this.channelMuted[channel] = muted;
+  setTrackMuted(track: number, muted: boolean): void {
+    if (track >= 0 && track < 8) {
+      this.player.trackMuted[track] = muted;
     }
   }
 
   /**
-   * Check if a hardware channel is muted.
+   * Check if a track is muted.
    */
-  isChannelMuted(channel: number): boolean {
-    return channel >= 0 && channel < 8 ? this.channelMuted[channel] : false;
+  isTrackMuted(track: number): boolean {
+    return track >= 0 && track < 8 ? this.player.trackMuted[track] : false;
   }
 
   /**
-   * Get mute state for all 8 channels.
+   * Get mute state for all 8 tracks.
    */
-  getChannelMuteState(): boolean[] {
-    return [...this.channelMuted];
+  getTrackMuteState(): boolean[] {
+    return [...this.player.trackMuted];
   }
 
   /**
@@ -350,19 +350,23 @@ export class TFMXAudio {
    *   Channels 1, 2 -> Right
    *
    * In multimode, channels 4-7 are also mixed in.
+   *
+   * Note: Muting is handled at the track level in the player engine
+   * (doTrack skips notePort calls for muted tracks), so all hardware
+   * channels are always mixed here.
    */
   private mixChannels(numSamples: number): void {
     if (this.player.multimode) {
-      if (!this.channelMuted[4]) this.mixAdd(this.player.hdb[4], numSamples, this.mixBufL);
-      if (!this.channelMuted[5]) this.mixAdd(this.player.hdb[5], numSamples, this.mixBufL);
-      if (!this.channelMuted[6]) this.mixAdd(this.player.hdb[6], numSamples, this.mixBufL);
-      if (!this.channelMuted[7]) this.mixAdd(this.player.hdb[7], numSamples, this.mixBufL);
+      this.mixAdd(this.player.hdb[4], numSamples, this.mixBufL);
+      this.mixAdd(this.player.hdb[5], numSamples, this.mixBufL);
+      this.mixAdd(this.player.hdb[6], numSamples, this.mixBufL);
+      this.mixAdd(this.player.hdb[7], numSamples, this.mixBufL);
     } else {
-      if (!this.channelMuted[3]) this.mixAdd(this.player.hdb[3], numSamples, this.mixBufL);
+      this.mixAdd(this.player.hdb[3], numSamples, this.mixBufL);
     }
-    if (!this.channelMuted[0]) this.mixAdd(this.player.hdb[0], numSamples, this.mixBufL);
-    if (!this.channelMuted[1]) this.mixAdd(this.player.hdb[1], numSamples, this.mixBufR);
-    if (!this.channelMuted[2]) this.mixAdd(this.player.hdb[2], numSamples, this.mixBufR);
+    this.mixAdd(this.player.hdb[0], numSamples, this.mixBufL);
+    this.mixAdd(this.player.hdb[1], numSamples, this.mixBufR);
+    this.mixAdd(this.player.hdb[2], numSamples, this.mixBufR);
   }
 
   /**

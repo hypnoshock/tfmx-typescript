@@ -11,11 +11,11 @@ const VIEW_HEIGHT = VISIBLE_ROWS * ROW_HEIGHT;
 interface PatternViewProps {
   decodedPatterns: PatternEntry[][];
   displayState: PlaybackDisplayState;
-  channelMuted?: boolean[];
-  onToggleMute?: (channel: number) => void;
+  trackMuted?: boolean[];
+  onToggleMute?: (track: number) => void;
 }
 
-export function PatternView({ decodedPatterns, displayState, channelMuted, onToggleMute }: PatternViewProps) {
+export function PatternView({ decodedPatterns, displayState, trackMuted, onToggleMute }: PatternViewProps) {
   const numTracks = 8;
 
   return (
@@ -40,7 +40,7 @@ export function PatternView({ decodedPatterns, displayState, channelMuted, onTog
               entries={patData}
               currentStep={currentStep}
               active={track?.active ?? false}
-              muted={channelMuted?.[trackIdx] ?? false}
+              muted={trackMuted?.[trackIdx] ?? false}
               onToggleMute={onToggleMute}
             />
           );

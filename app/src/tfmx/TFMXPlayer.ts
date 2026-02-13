@@ -34,6 +34,9 @@ export class TFMXPlayer {
   dangerFreakHack = 0;
   loops = 0; // 0 = infinite looping, >0 = number of loops, <0 = stop at end
 
+  // Track muting (8 tracks)
+  trackMuted: boolean[] = Array(8).fill(false);
+
   // Output rate (needed for period -> delta conversion)
   outRate = 44100;
 
@@ -960,12 +963,15 @@ export class TFMXPlayer {
   // --- DoTrack: process one track's pattern ---
   // Ported from DoTrack() in player.c
   // Returns 1 if trackstep advanced, 0 otherwise
-  private doTrack(p: Pdb): number {
+  // trackIndex is used for track-level muting: when a track is muted,
+  // notePort() calls are skipped but timing/structural commands still run.
+  private doTrack(p: Pdb, trackIndex: number): number {
     if (!this.data) return 0;
+    const muted = this.trackMuted[trackIndex] ?? false;
 
     if (p.PNum === 0xFE) {
       p.PNum++;
-      this.channelOff(p.PXpose);
+      if (!muted) this.channelOff(p.PXpose);
       return 0;
     }
     if (!p.PAddr && p.PNum !== 0) return 0;
@@ -992,7 +998,7 @@ export class TFMXPlayer {
         if ((t & 0xC0) === 0xC0) {
           x.b0 = x.b0 | 0xC0;
         }
-        this.notePort(x.l);
+        if (!muted) this.notePort(x.l);
         if ((t & 0xC0) === 0x80) {
           return 0;
         }
@@ -1062,7 +1068,7 @@ export class TFMXPlayer {
         case 6:  // Vibr
         case 7:  // Enve
         case 12: // Lock
-          this.notePort(x.l);
+          if (!muted) this.notePort(x.l);
           break;
 
         case 9: {
@@ -1108,7 +1114,7 @@ export class TFMXPlayer {
     if (oldSpeedCnt === 0) {
       this.mdb.SpeedCnt = this.pdb.Prescale;
       for (let x = 0; x < 8; x++) {
-        if (this.doTrack(this.pdb.p[x])) {
+        if (this.doTrack(this.pdb.p[x], x)) {
           x = -1; // restart loop
           continue;
         }
