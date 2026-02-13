@@ -1,0 +1,273 @@
+/* Explorer Panel - Sample & Macro browser */
+
+.explorer-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Tab bar */
+.explorer-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.explorer-tab {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  text-transform: uppercase;
+}
+
+.explorer-tab:hover {
+  color: var(--text-primary);
+  background: rgba(108, 99, 255, 0.05);
+}
+
+.explorer-tab.active {
+  color: var(--accent);
+  background: rgba(108, 99, 255, 0.08);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Content area */
+.explorer-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ======== Samples Tab ======== */
+
+.sample-list {
+  padding: 0.5rem 0;
+}
+
+.sample-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid rgba(42, 42, 62, 0.4);
+  transition: background 0.15s;
+}
+
+.sample-item:hover {
+  background: rgba(108, 99, 255, 0.05);
+}
+
+.sample-play-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(108, 99, 255, 0.15);
+  border: 1px solid rgba(108, 99, 255, 0.3);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.sample-play-btn:hover {
+  background: rgba(108, 99, 255, 0.25);
+  transform: scale(1.1);
+}
+
+.sample-play-btn:active {
+  transform: scale(0.95);
+}
+
+.sample-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sample-name {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sample-detail {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mini waveform */
+.sample-waveform {
+  flex-shrink: 0;
+}
+
+/* ======== Macros Tab ======== */
+
+.macro-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.macro-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.macro-selector label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.macro-select {
+  flex: 1;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.25rem 0.4rem;
+  min-width: 0;
+}
+
+.macro-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.macro-trigger-btn {
+  padding: 0.25rem 0.6rem;
+  background: rgba(108, 99, 255, 0.15);
+  border: 1px solid rgba(108, 99, 255, 0.3);
+  color: var(--accent);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.macro-trigger-btn:hover {
+  background: rgba(108, 99, 255, 0.25);
+}
+
+.macro-trigger-btn:active {
+  background: rgba(108, 99, 255, 0.35);
+}
+
+/* Macro command list */
+.macro-commands {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.macro-cmd-row {
+  display: flex;
+  align-items: center;
+  padding: 0.15rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.macro-cmd-row:hover {
+  background: rgba(108, 99, 255, 0.04);
+}
+
+.macro-cmd-step {
+  color: #3d3d58;
+  width: 3ch;
+  text-align: right;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.macro-cmd-code {
+  color: var(--accent);
+  width: 2.5ch;
+  text-align: right;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.macro-cmd-name {
+  color: #b8a060;
+  width: 11ch;
+  flex-shrink: 0;
+  margin-right: 0.35rem;
+}
+
+.macro-cmd-params {
+  color: #90cc90;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.macro-cmd-row.is-end .macro-cmd-name {
+  color: #ef5350;
+}
+
+/* Note command names */
+.macro-cmd-row .macro-cmd-name.cmd-sample {
+  color: #70a0b8;
+}
+
+.macro-cmd-row .macro-cmd-name.cmd-note {
+  color: #90cc90;
+}
+
+.macro-cmd-row .macro-cmd-name.cmd-dma {
+  color: #cc9090;
+}
+
+/* Empty state */
+.explorer-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+

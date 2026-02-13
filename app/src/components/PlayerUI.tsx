@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { TFMXAudio, parseTFMX, countSubSongs, decodeAllPatterns } from '../tfmx';
 import type { TFMXData, PatternEntry, PlaybackDisplayState } from '../tfmx';
 import { PatternView } from './PatternView';
+import { ExplorerPanel } from './ExplorerPanel';
 import './PlayerUI.css';
 
 export function PlayerUI() {
@@ -134,7 +135,7 @@ export function PlayerUI() {
 
   return (
     <>
-      <div className="player-wrapper">
+      <div className="top-section">
         <div className="player-container">
           <div className="player-header">
             <h1 className="player-title">TFMX Player</h1>
@@ -236,9 +237,14 @@ export function PlayerUI() {
             </button>
           </div>
         </div>
+
+        {/* Explorer Panel — beside the player controls */}
+        {data && (
+          <ExplorerPanel data={data} audio={getAudio()} />
+        )}
       </div>
 
-      {/* Pattern View — full width, outside the player container */}
+      {/* Pattern View — full width, below the top section */}
       {data && decodedPatterns.length > 0 && (
         <div className="pattern-view-wrapper">
           <PatternView

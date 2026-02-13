@@ -1206,6 +1206,29 @@ export class TFMXPlayer {
     return this.mdb.PlayerEnable !== 0;
   }
 
+  // --- Public: trigger a single macro for preview purposes ---
+  // Sets up a note on channel 0, bypassing the track/pattern system.
+  // The player must be enabled and ticking for the macro to execute.
+  triggerMacro(macroNum: number, noteNum: number = 0x1E): void {
+    if (!this.data || macroNum < 0 || macroNum >= this.data.numMacros) return;
+
+    // Build a note command: note=noteNum, macro=macroNum, velocity=0xF, detune=0
+    // Format: aa bb cv dd -> note, macro, (vel<<4)|channel, detune
+    const noteCmd =
+      ((noteNum & 0x3F) << 24) |
+      ((macroNum & 0xFF) << 16) |
+      (0xF0) | // velocity=0xF, channel=0
+      0;        // detune=0
+
+    this.notePort(noteCmd >>> 0);
+  }
+
+  // --- Public: enable the player for macro preview (no song) ---
+  enableForPreview(): void {
+    this.mdb.PlayerEnable = 1;
+    this.mdb.CurrSong = -1; // prevent DoTracks from running
+  }
+
   // --- Public: get current display state for the pattern view ---
   getDisplayState(): PlaybackDisplayState {
     if (!this.data) {

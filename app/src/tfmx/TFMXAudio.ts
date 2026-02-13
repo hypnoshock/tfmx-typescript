@@ -140,6 +140,69 @@ export class TFMXAudio {
   }
 
   /**
+   * Trigger a macro for preview playback.
+   * If a song is already playing, the macro is triggered on channel 0.
+   * If nothing is playing, the engine is put into preview mode and started.
+   */
+  triggerMacro(macroNum: number, noteNum: number = 0x1E): void {
+    if (!this.data) return;
+
+    if (!this.audioCtx) {
+      this.audioCtx = new AudioContext({ sampleRate: DEFAULT_OUT_RATE });
+    }
+    this.player.outRate = this.audioCtx.sampleRate;
+
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+
+    // If the player isn't running a song, set up preview mode
+    if (!this.player.isPlaying) {
+      this.player.tfmxInit();
+      this.player.enableForPreview();
+
+      // Reset mixing state
+      this.eRem = 0;
+      this.blockDone = 0;
+      this.mixBufL.fill(0);
+      this.mixBufR.fill(0);
+      this.filterStateL = 0;
+      this.filterStateR = 0;
+    }
+
+    this.player.triggerMacro(macroNum, noteNum);
+
+    // Ensure ScriptProcessorNode is running
+    if (!this.scriptNode) {
+      this.scriptNode = this.audioCtx.createScriptProcessor(4096, 0, 2);
+      this.scriptNode.onaudioprocess = (e) => this.audioProcess(e);
+      this.scriptNode.connect(this.audioCtx.destination);
+    }
+
+    this._paused = false;
+  }
+
+  /**
+   * Play a raw sample region using Web Audio API directly.
+   * Used by the sample explorer for quick previews.
+   */
+  playSample(sampleData: Float32Array, sampleRate: number = 16574): void {
+    if (!this.audioCtx) {
+      this.audioCtx = new AudioContext({ sampleRate: DEFAULT_OUT_RATE });
+    }
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+
+    const buffer = this.audioCtx.createBuffer(1, sampleData.length, sampleRate);
+    buffer.copyToChannel(sampleData, 0);
+    const source = this.audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.audioCtx.destination);
+    source.start();
+  }
+
+  /**
    * Stop and clean up
    */
   stop(): void {
