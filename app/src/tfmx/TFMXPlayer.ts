@@ -1254,7 +1254,11 @@ export class TFMXPlayer {
     const tracks: TrackDisplayState[] = [];
     for (let i = 0; i < 8; i++) {
       const p = this.pdb.p[i];
-      const active = p.PNum < 0x80;
+      // A track is actively processing if PNum < 0x90.
+      // PNum < 0x80 = normal pattern, 0x80 = hold (keep running with new transpose).
+      // The player engine (doTrack) continues processing for PNum 0x80-0x8F,
+      // only returning early at PNum >= 0x90.
+      const active = p.PNum < 0x90;
 
       let patternNum = -1;
       if (active) {
