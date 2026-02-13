@@ -69,13 +69,15 @@ export function PlayerUI() {
   const handlePlay = useCallback(() => {
     if (!data) return;
     const audio = getAudio();
-    if (audio.isPaused && isPlaying) {
+    if (audio.canResume) {
+      // Was playing and got paused — resume from current position
       audio.resume();
     } else {
+      // First play, or starting fresh after a song change
       audio.play(songNum);
     }
     setIsPlaying(true);
-  }, [data, songNum, isPlaying, getAudio]);
+  }, [data, songNum, getAudio]);
 
   const handlePause = useCallback(() => {
     const audio = getAudio();

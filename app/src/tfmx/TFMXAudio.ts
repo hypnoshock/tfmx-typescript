@@ -41,6 +41,7 @@ export class TFMXAudio {
   private filterStateR = 0;
 
   private _paused = true;
+  private _hasPlayed = false;
 
   constructor() {
     this.player = new TFMXPlayer();
@@ -59,12 +60,20 @@ export class TFMXAudio {
   }
 
   /**
+   * True when playback was started and then paused — i.e. resume is possible.
+   */
+  get canResume(): boolean {
+    return this._hasPlayed && this._paused;
+  }
+
+  /**
    * Load TFMX module data
    */
   load(data: TFMXData): void {
     this.data = data;
     this.player.loadData(data);
     this.player.tfmxInit();
+    this._hasPlayed = false;
   }
 
   /**
@@ -104,24 +113,30 @@ export class TFMXAudio {
     }
 
     this._paused = false;
+    this._hasPlayed = true;
   }
 
   /**
-   * Pause playback
+   * Pause playback — suspends the AudioContext so the browser stops
+   * the ScriptProcessorNode callback (avoids silent-output issues).
    */
   pause(): void {
     this._paused = true;
+    if (this.audioCtx && this.audioCtx.state === 'running') {
+      this.audioCtx.suspend();
+    }
   }
 
   /**
-   * Resume playback
+   * Resume playback from where it was paused.
+   * Player state is preserved — the song continues from the same position.
    */
   resume(): void {
     if (!this.data || !this.audioCtx) return;
+    this._paused = false;
     if (this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
     }
-    this._paused = false;
   }
 
   /**
