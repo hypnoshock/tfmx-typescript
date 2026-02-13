@@ -156,19 +156,19 @@ export class TFMXAudio {
       this.audioCtx.resume();
     }
 
-    // If the player isn't running a song, set up preview mode
-    if (!this.player.isPlaying) {
-      this.player.tfmxInit();
-      this.player.enableForPreview();
+    // Always stop any running song and switch to isolated preview mode.
+    // Macros are instruments — we want to hear them in isolation, not on
+    // top of whatever song is currently playing.
+    this.player.tfmxInit();
+    this.player.enableForPreview();
 
-      // Reset mixing state
-      this.eRem = 0;
-      this.blockDone = 0;
-      this.mixBufL.fill(0);
-      this.mixBufR.fill(0);
-      this.filterStateL = 0;
-      this.filterStateR = 0;
-    }
+    // Reset mixing state
+    this.eRem = 0;
+    this.blockDone = 0;
+    this.mixBufL.fill(0);
+    this.mixBufR.fill(0);
+    this.filterStateL = 0;
+    this.filterStateR = 0;
 
     this.player.triggerMacro(macroNum, noteNum);
 
