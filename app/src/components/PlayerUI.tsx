@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
-import { TFMXAudio, parseTFMX, countSubSongs } from '../tfmx';
-import type { TFMXData } from '../tfmx';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { TFMXAudio, parseTFMX, countSubSongs, decodeAllPatterns } from '../tfmx';
+import type { TFMXData, PatternEntry, PlaybackDisplayState } from '../tfmx';
+import { PatternView } from './PatternView';
 import './PlayerUI.css';
 
 export function PlayerUI() {
@@ -15,6 +16,11 @@ export function PlayerUI() {
   const [mdatName, setMdatName] = useState('');
   const [smplName, setSmplName] = useState('');
   const [error, setError] = useState('');
+  const [decodedPatterns, setDecodedPatterns] = useState<PatternEntry[][]>([]);
+  const [displayState, setDisplayState] = useState<PlaybackDisplayState>({
+    currPos: 0,
+    tracks: Array.from({ length: 8 }, () => ({ patternNum: -1, currentStep: 0, active: false })),
+  });
 
   const getAudio = useCallback((): TFMXAudio => {
     if (!audioRef.current) {
@@ -58,6 +64,10 @@ export function PlayerUI() {
       const numSongs = countSubSongs(parsed.hdr);
       setTotalSongs(numSongs);
       setSongNum(0);
+
+      // Decode all patterns for the tracker display
+      const decoded = decodeAllPatterns(parsed);
+      setDecodedPatterns(decoded);
 
       const audio = getAudio();
       audio.load(parsed);
@@ -104,6 +114,23 @@ export function PlayerUI() {
       audio.play(newSong);
     }
   }, [data, songNum, totalSongs, isPlaying, getAudio]);
+
+  // Poll player state at ~60fps for the pattern display
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    let animFrame: number;
+    const update = () => {
+      if (audioRef.current) {
+        const state = audioRef.current.playerInstance.getDisplayState();
+        setDisplayState(state);
+      }
+      animFrame = requestAnimationFrame(update);
+    };
+
+    animFrame = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animFrame);
+  }, [isPlaying]);
 
   return (
     <div className="player-container">
@@ -206,6 +233,14 @@ export function PlayerUI() {
           </svg>
         </button>
       </div>
+
+      {/* Pattern View */}
+      {data && decodedPatterns.length > 0 && (
+        <PatternView
+          decodedPatterns={decodedPatterns}
+          displayState={displayState}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,198 @@
+/* Pattern View - Tracker-style scrolling pattern display */
+
+.pattern-view {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0;
+  margin-top: 1.25rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.pattern-pos {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.75rem 0.25rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.05em;
+}
+
+/* Grid of track columns */
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+}
+
+/* The horizontal cursor line inside each track viewport */
+.track-cursor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(108, 99, 255, 0.12);
+  border-top: 1px solid rgba(108, 99, 255, 0.4);
+  border-bottom: 1px solid rgba(108, 99, 255, 0.4);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Individual track column */
+.track-column {
+  border-right: 1px solid var(--border);
+  min-width: 0; /* prevent grid blowout */
+}
+
+.track-column:last-child {
+  border-right: none;
+}
+
+.track-header {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+  padding: 0.3rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(108, 99, 255, 0.05);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.04em;
+}
+
+.track-header.inactive {
+  color: var(--text-secondary);
+  opacity: 0.4;
+}
+
+/* The clipped viewport for scrolling pattern data */
+.track-viewport {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gradient fades at top and bottom of viewport */
+.track-viewport::before,
+.track-viewport::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 36px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.track-viewport::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg-tertiary), transparent);
+}
+
+.track-viewport::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg-tertiary), transparent);
+}
+
+/* The translating content container */
+.track-content {
+  will-change: transform;
+}
+
+/* Individual pattern row */
+.pattern-row {
+  display: flex;
+  align-items: center;
+  padding: 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Step number (left side) */
+.step-num {
+  color: #3d3d58;
+  margin-right: 0.35rem;
+  flex-shrink: 0;
+  width: 1.6ch;
+  text-align: right;
+}
+
+/* Pattern data */
+.row-data {
+  color: #607060;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+/* --- Entry type color coding --- */
+
+/* Notes (immediate, no wait) */
+.pattern-row.note .row-data {
+  color: #6a9a6a;
+}
+
+/* Notes with wait (the "main" row-type - these cause audible notes) */
+.pattern-row.note-wait .row-data {
+  color: #90cc90;
+}
+
+.pattern-row.note-wait .step-num {
+  color: #4a5a4a;
+}
+
+/* Portamento notes */
+.pattern-row.porta .row-data {
+  color: #70a0b8;
+}
+
+/* Commands */
+.pattern-row.command .row-data {
+  color: #b8a060;
+}
+
+/* --- Current row highlight --- */
+.pattern-row.current {
+  background: rgba(108, 99, 255, 0.18);
+}
+
+.pattern-row.current .step-num {
+  color: rgba(108, 99, 255, 0.7);
+}
+
+.pattern-row.current.note .row-data {
+  color: #80c080;
+}
+
+.pattern-row.current.note-wait .row-data {
+  color: #b0eeb0;
+  text-shadow: 0 0 6px rgba(144, 238, 144, 0.3);
+}
+
+.pattern-row.current.porta .row-data {
+  color: #90c8e0;
+  text-shadow: 0 0 6px rgba(144, 200, 224, 0.3);
+}
+
+.pattern-row.current.command .row-data {
+  color: #d8c070;
+  text-shadow: 0 0 6px rgba(216, 192, 112, 0.3);
+}
+
+/* Empty placeholder for inactive tracks */
+.track-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: #2a2a3e;
+  height: 100%;
+}
+

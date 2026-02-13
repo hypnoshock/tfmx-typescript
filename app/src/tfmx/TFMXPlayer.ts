@@ -1205,5 +1205,58 @@ export class TFMXPlayer {
   get isPlaying(): boolean {
     return this.mdb.PlayerEnable !== 0;
   }
+
+  // --- Public: get current display state for the pattern view ---
+  getDisplayState(): PlaybackDisplayState {
+    if (!this.data) {
+      return {
+        currPos: 0,
+        tracks: Array.from({ length: 8 }, () => ({
+          patternNum: -1,
+          currentStep: 0,
+          active: false,
+        })),
+      };
+    }
+
+    const tracks: TrackDisplayState[] = [];
+    for (let i = 0; i < 8; i++) {
+      const p = this.pdb.p[i];
+      const active = p.PNum < 0x80;
+
+      let patternNum = -1;
+      if (active) {
+        // Reverse-lookup pattern number from PAddr
+        for (let j = 0; j < this.data.patterns.length; j++) {
+          if (this.data.patterns[j] === p.PAddr) {
+            patternNum = j;
+            break;
+          }
+        }
+      }
+
+      tracks.push({
+        patternNum,
+        currentStep: p.PStep > 0 ? p.PStep - 1 : 0,
+        active: active && patternNum >= 0,
+      });
+    }
+
+    return {
+      currPos: this.pdb.CurrPos,
+      tracks,
+    };
+  }
+}
+
+export interface TrackDisplayState {
+  patternNum: number;
+  currentStep: number;
+  active: boolean;
+}
+
+export interface PlaybackDisplayState {
+  currPos: number;
+  tracks: TrackDisplayState[];
 }
 
