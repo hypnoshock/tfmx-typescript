@@ -40,6 +40,9 @@ export class TFMXAudio {
   private filterStateL = 0;
   private filterStateR = 0;
 
+  // Channel muting (8 hardware channels)
+  private channelMuted: boolean[] = Array(8).fill(false);
+
   private _paused = true;
   private _hasPlayed = false;
 
@@ -64,6 +67,29 @@ export class TFMXAudio {
    */
   get canResume(): boolean {
     return this._hasPlayed && this._paused;
+  }
+
+  /**
+   * Mute or unmute a hardware channel (0-7).
+   */
+  setChannelMuted(channel: number, muted: boolean): void {
+    if (channel >= 0 && channel < 8) {
+      this.channelMuted[channel] = muted;
+    }
+  }
+
+  /**
+   * Check if a hardware channel is muted.
+   */
+  isChannelMuted(channel: number): boolean {
+    return channel >= 0 && channel < 8 ? this.channelMuted[channel] : false;
+  }
+
+  /**
+   * Get mute state for all 8 channels.
+   */
+  getChannelMuteState(): boolean[] {
+    return [...this.channelMuted];
   }
 
   /**
@@ -327,16 +353,16 @@ export class TFMXAudio {
    */
   private mixChannels(numSamples: number): void {
     if (this.player.multimode) {
-      this.mixAdd(this.player.hdb[4], numSamples, this.mixBufL);
-      this.mixAdd(this.player.hdb[5], numSamples, this.mixBufL);
-      this.mixAdd(this.player.hdb[6], numSamples, this.mixBufL);
-      this.mixAdd(this.player.hdb[7], numSamples, this.mixBufL);
+      if (!this.channelMuted[4]) this.mixAdd(this.player.hdb[4], numSamples, this.mixBufL);
+      if (!this.channelMuted[5]) this.mixAdd(this.player.hdb[5], numSamples, this.mixBufL);
+      if (!this.channelMuted[6]) this.mixAdd(this.player.hdb[6], numSamples, this.mixBufL);
+      if (!this.channelMuted[7]) this.mixAdd(this.player.hdb[7], numSamples, this.mixBufL);
     } else {
-      this.mixAdd(this.player.hdb[3], numSamples, this.mixBufL);
+      if (!this.channelMuted[3]) this.mixAdd(this.player.hdb[3], numSamples, this.mixBufL);
     }
-    this.mixAdd(this.player.hdb[0], numSamples, this.mixBufL);
-    this.mixAdd(this.player.hdb[1], numSamples, this.mixBufR);
-    this.mixAdd(this.player.hdb[2], numSamples, this.mixBufR);
+    if (!this.channelMuted[0]) this.mixAdd(this.player.hdb[0], numSamples, this.mixBufL);
+    if (!this.channelMuted[1]) this.mixAdd(this.player.hdb[1], numSamples, this.mixBufR);
+    if (!this.channelMuted[2]) this.mixAdd(this.player.hdb[2], numSamples, this.mixBufR);
   }
 
   /**

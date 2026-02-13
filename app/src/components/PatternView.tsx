@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import type { PatternEntry } from '../tfmx/patternDisplay';
 import type { PlaybackDisplayState } from '../tfmx/TFMXPlayer';
 import './PatternView.css';
@@ -11,9 +11,11 @@ const VIEW_HEIGHT = VISIBLE_ROWS * ROW_HEIGHT;
 interface PatternViewProps {
   decodedPatterns: PatternEntry[][];
   displayState: PlaybackDisplayState;
+  channelMuted?: boolean[];
+  onToggleMute?: (channel: number) => void;
 }
 
-export function PatternView({ decodedPatterns, displayState }: PatternViewProps) {
+export function PatternView({ decodedPatterns, displayState, channelMuted, onToggleMute }: PatternViewProps) {
   const numTracks = 8;
 
   return (
@@ -38,6 +40,8 @@ export function PatternView({ decodedPatterns, displayState }: PatternViewProps)
               entries={patData}
               currentStep={currentStep}
               active={track?.active ?? false}
+              muted={channelMuted?.[trackIdx] ?? false}
+              onToggleMute={onToggleMute}
             />
           );
         })}
@@ -52,12 +56,16 @@ function TrackColumn({
   entries,
   currentStep,
   active,
+  muted,
+  onToggleMute,
 }: {
   trackIdx: number;
   patternNum: number;
   entries: PatternEntry[];
   currentStep: number;
   active: boolean;
+  muted: boolean;
+  onToggleMute?: (channel: number) => void;
 }) {
   // Calculate translateY to center the current step in the viewport
   const translateY = useMemo(() => {
@@ -65,13 +73,26 @@ function TrackColumn({
     return -(currentStep * ROW_HEIGHT) + CENTER_ROW * ROW_HEIGHT;
   }, [active, currentStep]);
 
+  const handleMuteClick = useCallback(() => {
+    onToggleMute?.(trackIdx);
+  }, [onToggleMute, trackIdx]);
+
   const headerText = active
     ? `Trk ${trackIdx} [${patternNum.toString(16).toUpperCase().padStart(2, '0')}]`
     : `Trk ${trackIdx}`;
 
   return (
-    <div className="track-column">
-      <div className={`track-header ${!active ? 'inactive' : ''}`}>{headerText}</div>
+    <div className={`track-column ${muted ? 'muted' : ''}`}>
+      <div className={`track-header ${!active ? 'inactive' : ''}`}>
+        <span className="track-header-text">{headerText}</span>
+        <button
+          className={`mute-btn ${muted ? 'muted' : ''}`}
+          onClick={handleMuteClick}
+          title={muted ? `Unmute track ${trackIdx}` : `Mute track ${trackIdx}`}
+        >
+          {muted ? 'M' : 'M'}
+        </button>
+      </div>
       <div className="track-viewport" style={{ height: VIEW_HEIGHT }}>
         {/* Cursor line at the center of the viewport */}
         <div

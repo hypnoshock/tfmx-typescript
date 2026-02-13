@@ -22,6 +22,7 @@ export function PlayerUI() {
     currPos: 0,
     tracks: Array.from({ length: 8 }, () => ({ patternNum: -1, currentStep: 0, active: false })),
   });
+  const [channelMuted, setChannelMuted] = useState<boolean[]>(Array(8).fill(false));
 
   const getAudio = useCallback((): TFMXAudio => {
     if (!audioRef.current) {
@@ -115,6 +116,13 @@ export function PlayerUI() {
       audio.play(newSong);
     }
   }, [data, songNum, totalSongs, isPlaying, getAudio]);
+
+  const handleToggleMute = useCallback((channel: number) => {
+    const audio = getAudio();
+    const newMuted = !audio.isChannelMuted(channel);
+    audio.setChannelMuted(channel, newMuted);
+    setChannelMuted(audio.getChannelMuteState());
+  }, [getAudio]);
 
   // Poll player state at ~60fps for the pattern display
   useEffect(() => {
@@ -250,6 +258,8 @@ export function PlayerUI() {
           <PatternView
             decodedPatterns={decodedPatterns}
             displayState={displayState}
+            channelMuted={channelMuted}
+            onToggleMute={handleToggleMute}
           />
         </div>
       )}

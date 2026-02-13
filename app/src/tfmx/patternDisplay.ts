@@ -61,13 +61,15 @@ function decodeEntry(raw: number, step: number): PatternEntry {
 
     if (t < 0x80) {
       // Immediate note (no wait), b3 = detune
-      return { step, display: `${noteName} ${macro} ${vol}`, type: 'note', isEnd: false };
+      return { step, display: `${noteName} M:${macro} V:${vol}`, type: 'note', isEnd: false };
     } else if (t < 0xC0) {
       // Note with wait, b3 = wait count
-      return { step, display: `${noteName} ${macro} ${vol}`, type: 'note-wait', isEnd: false };
+      const wait = hex2(x.b3);
+      return { step, display: `${noteName} M:${macro} V:${vol} W:${wait}`, type: 'note-wait', isEnd: false };
     } else {
       // Portamento note, b3 = rate
-      return { step, display: `${noteName} ${macro} ${vol}`, type: 'porta', isEnd: false };
+      const rate = hex2(x.b3);
+      return { step, display: `${noteName} M:${macro} V:${vol} P:${rate}`, type: 'porta', isEnd: false };
     }
   }
 
