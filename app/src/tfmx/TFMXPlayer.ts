@@ -845,12 +845,12 @@ export class TFMXPlayer {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // Loop/end check (ported from C: loops variable check at top of GetTrackStep)
-      if (this.pdb.CurrPos === this.pdb.FirstPos && this.loops <= 0) {
-        if (this.loops < 0) {
-          this.mdb.PlayerEnable = 0;
-          return;
-        }
-        this.loops--;
+      // loops === 0 means infinite looping (browser default) — skip the check entirely.
+      // loops > 0 is handled by the trackstep loop command (case 1 below).
+      // loops < 0 means we've counted down past zero — stop the player.
+      if (this.pdb.CurrPos === this.pdb.FirstPos && this.loops < 0) {
+        this.mdb.PlayerEnable = 0;
+        return;
       }
 
       // Read 8 words for the current trackstep position
@@ -1172,6 +1172,7 @@ export class TFMXPlayer {
     this.mdb.TrackLoop = -1;
     this.mdb.PlayPattFlag = 0;
     this.mdb.CIASave = this.eClocks = DEFAULT_ECLOCKS;
+    this.loops = 0; // Reset to infinite looping for each new song
 
     if (mode !== 2) {
       this.pdb.CurrPos = this.pdb.FirstPos = this.data.hdr.start[song];
