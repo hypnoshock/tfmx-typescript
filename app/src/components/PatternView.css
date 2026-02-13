@@ -121,6 +121,28 @@
   opacity: 0.3;
 }
 
+/* Channel activity indicators - 7 small squares per track */
+.channel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.ch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background-color 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+
+.ch-dot.active {
+  /* colors set inline via style */
+}
+
 /* The clipped viewport for scrolling pattern data */
 .track-viewport {
   position: relative;

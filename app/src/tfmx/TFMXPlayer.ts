@@ -37,6 +37,11 @@ export class TFMXPlayer {
   // Track muting (8 tracks)
   trackMuted: boolean[] = Array(8).fill(false);
 
+  // Channel-to-track ownership: channelOwnerTrack[ch] = track index that last triggered it (-1 = none)
+  channelOwnerTrack: number[] = Array(8).fill(-1);
+  // Which track is currently being processed (set during doTrack)
+  private _activeTrackIdx = -1;
+
   // Output rate (needed for period -> delta conversion)
   outRate = 44100;
 
@@ -238,6 +243,10 @@ export class TFMXPlayer {
       c.KeyUp = 1;
       c.Loop = -1;
       c.MacroRun = -1;
+      // Track which track triggered this channel
+      if (this._activeTrackIdx >= 0) {
+        this.channelOwnerTrack[channelIdx] = this._activeTrackIdx;
+      }
     } else if (x.b0 < 0xF0) {
       // portamento note
       c.PortaReset = x.b1;
@@ -968,6 +977,7 @@ export class TFMXPlayer {
   private doTrack(p: Pdb, trackIndex: number): number {
     if (!this.data) return 0;
     const muted = this.trackMuted[trackIndex] ?? false;
+    this._activeTrackIdx = trackIndex;
 
     if (p.PNum === 0xFE) {
       p.PNum++;
@@ -1135,6 +1145,7 @@ export class TFMXPlayer {
   // Ported from AllOff() + TfmxInit() in player.c
   allOff(): void {
     this.mdb.PlayerEnable = 0;
+    this.channelOwnerTrack.fill(-1);
     for (let x = 0; x < 8; x++) {
       const c = this.cdb[x];
       const hw = this.hdb[x];
@@ -1247,6 +1258,7 @@ export class TFMXPlayer {
           patternNum: -1,
           currentStep: 0,
           active: false,
+          channelVolumes: Array(7).fill(0),
         })),
       };
     }
@@ -1271,10 +1283,22 @@ export class TFMXPlayer {
         }
       }
 
+      // Build per-track channel volumes: for each of the 7 channels,
+      // include the hardware volume only if this track owns that channel
+      const channelVolumes: number[] = [];
+      for (let ch = 0; ch < 7; ch++) {
+        if (this.channelOwnerTrack[ch] === i) {
+          channelVolumes.push(Math.min(this.hdb[ch].vol, 0x40));
+        } else {
+          channelVolumes.push(0);
+        }
+      }
+
       tracks.push({
         patternNum,
         currentStep: p.PStep > 0 ? p.PStep - 1 : 0,
         active: active && patternNum >= 0,
+        channelVolumes,
       });
     }
 
@@ -1289,6 +1313,8 @@ export interface TrackDisplayState {
   patternNum: number;
   currentStep: number;
   active: boolean;
+  /** Volume (0-64) for each of the 7 channels, non-zero only if this track owns that channel */
+  channelVolumes: number[];
 }
 
 export interface PlaybackDisplayState {

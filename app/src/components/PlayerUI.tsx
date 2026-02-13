@@ -20,7 +20,7 @@ export function PlayerUI() {
   const [decodedPatterns, setDecodedPatterns] = useState<PatternEntry[][]>([]);
   const [displayState, setDisplayState] = useState<PlaybackDisplayState>({
     currPos: 0,
-    tracks: Array.from({ length: 8 }, () => ({ patternNum: -1, currentStep: 0, active: false })),
+    tracks: Array.from({ length: 8 }, () => ({ patternNum: -1, currentStep: 0, active: false, channelVolumes: Array(7).fill(0) })),
   });
   const [trackMuted, setTrackMuted] = useState<boolean[]>(Array(8).fill(false));
 

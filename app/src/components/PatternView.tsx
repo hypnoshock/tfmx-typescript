@@ -7,6 +7,19 @@ const VISIBLE_ROWS = 17;
 const ROW_HEIGHT = 18;
 const CENTER_ROW = Math.floor(VISIBLE_ROWS / 2);
 const VIEW_HEIGHT = VISIBLE_ROWS * ROW_HEIGHT;
+const NUM_CHANNELS = 7;
+const EMPTY_VOLUMES = Array(NUM_CHANNELS).fill(0);
+
+// Channel indicator color palette (one hue per channel)
+const CHANNEL_COLORS = [
+  [255,  80,  80],  // ch0 - red
+  [255, 160,  50],  // ch1 - orange
+  [255, 230,  60],  // ch2 - yellow
+  [ 80, 220,  80],  // ch3 - green
+  [ 60, 180, 255],  // ch4 - blue
+  [160, 100, 255],  // ch5 - purple
+  [255, 100, 200],  // ch6 - pink
+];
 
 interface PatternViewProps {
   decodedPatterns: PatternEntry[][];
@@ -42,6 +55,7 @@ export function PatternView({ decodedPatterns, displayState, trackMuted, onToggl
               active={track?.active ?? false}
               muted={trackMuted?.[trackIdx] ?? false}
               onToggleMute={onToggleMute}
+              channelVolumes={track?.channelVolumes ?? EMPTY_VOLUMES}
             />
           );
         })}
@@ -58,6 +72,7 @@ function TrackColumn({
   active,
   muted,
   onToggleMute,
+  channelVolumes,
 }: {
   trackIdx: number;
   patternNum: number;
@@ -66,6 +81,7 @@ function TrackColumn({
   active: boolean;
   muted: boolean;
   onToggleMute?: (channel: number) => void;
+  channelVolumes: number[];
 }) {
   // Calculate translateY to center the current step in the viewport
   const translateY = useMemo(() => {
@@ -92,6 +108,25 @@ function TrackColumn({
         >
           {muted ? 'M' : 'M'}
         </button>
+      </div>
+      <div className="channel-indicators">
+        {Array.from({ length: NUM_CHANNELS }, (_, ch) => {
+          const vol = channelVolumes[ch] ?? 0;
+          // Normalize volume 0-64 to 0-1
+          const intensity = Math.min(vol / 0x40, 1);
+          const [r, g, b] = CHANNEL_COLORS[ch];
+          const bg = intensity > 0
+            ? `rgba(${r}, ${g}, ${b}, ${0.15 + intensity * 0.85})`
+            : undefined;
+          return (
+            <div
+              key={ch}
+              className={`ch-dot ${intensity > 0 ? 'active' : ''}`}
+              style={bg ? { backgroundColor: bg, boxShadow: `0 0 ${2 + intensity * 4}px rgba(${r}, ${g}, ${b}, ${intensity * 0.6})` } : undefined}
+              title={`Ch ${ch}: ${vol}`}
+            />
+          );
+        })}
       </div>
       <div className="track-viewport" style={{ height: VIEW_HEIGHT }}>
         {/* Cursor line at the center of the viewport */}
