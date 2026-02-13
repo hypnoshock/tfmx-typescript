@@ -14,7 +14,7 @@ interface PatternViewProps {
 }
 
 export function PatternView({ decodedPatterns, displayState }: PatternViewProps) {
-  const numTracks = 4;
+  const numTracks = 8;
 
   return (
     <div className="pattern-view">
