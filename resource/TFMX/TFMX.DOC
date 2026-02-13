@@ -1,0 +1,388 @@
+*****************************************************************************
+*****************************************************************************
+*****************************************************************************
+               this is the incredible documentation of the new
+
+                             TFMX-PLAYER V3.21
+
+               read it carefully to understand all functions !
+
+*****************************************************************************
+*****************************************************************************
+*****************************************************************************
+
+
+
+Copyright:      This program was written by 'The Swing' in June/July 1992
+                TFMX-Player is FREEWARE, which means that you can copy it
+                and use it but you aren't allowed to change anything !!!!
+
+                The name TFMX (The Final Musicsystem eXtended),
+                the 4 & 8 Voice-Routines were written & (C) by
+                J.Hippel/C.Huelsbeck.
+
+                Bitty-Soft-Industries (BSI) optimized the 4V-Routine,
+                so there must go a lot of thanx to him.
+
+                Some major optimizing on the 8V-Routine were done
+                by myself. We (SWING/BSI) still work on it.
+
+
+
+*****************************************************************************
+
+The tale of a dissatisfied Computer-Music-Lover:
+
+                Once upon a time there was a game called Turrican 2.
+                A young Amiga-User played (and solved) this perfect
+                game and enjoyed the great sound. 'I must get this
+                music', he said and started to work.
+
+                'Hmmmm.',he thought,'The musician is the Master Of Music:
+                Chris Huelsbeck.....it must be a masterpiece of TFMX'
+
+                What an awful tale, lets speeeeeeeeeed up a bit.
+
+                As an owner of the original TFMX-Editor I am able to
+                rip any kind of TFMX-Module (because I know the
+                structure of them).
+
+                After I ripped so many songs (Turrican I,II Apidya,
+                Z-Out, X-Out, MonkeyIsland, Masterblazer, Hard&Heavy,
+                Battle Isle, MUDS, etc.) I needed a program to play
+                them. I found the great MultiPlayer but this program
+                played (at this time) only the very old modules.
+
+                My original TFMX-Editor has got the same problem.
+                So I started to rip the play-routines.
+
+                With these new routines I was able to play ALL
+                modules.
+
+                The aim was set - I NEED MY OWN PLAYER !!!!!!!
+
+*****************************************************************************
+
+What you should know about TFMX-Modules:
+
+                These modules are built in an different way as you know
+                it from the Noise/Pro or anthing-else-Tracker
+
+                A TFMX-Module has got two files.
+                There is a musicdata file (mostly started with mdat.Filename)
+                And there is a sampledata file (smpl.Filename).
+
+                You need BOTH files to play a song !
+                
+*****************************************************************************
+
+What you need to use TFMX-Player V3.21:
+
+                an Amiga 500(+)/600(HD)/1000/2000/2500/3000/4000........
+                that means it will work on EVERY Amiga.
+
+                Yo, it's time to use Kickstart 2.04
+                you need it (or higher versions)
+
+                you need the asl.library in your LIBS: dir
+
+                and of course some modules to play....
+
+                If you have only Kick 1.2/1.3 look out for
+                TFMX-Player V2.3
+
+*****************************************************************************
+
+HOW TO START:
+                from CLI (who's using that ?) or Shell:
+
+                        enter TFMX-Player (you don't need to run it)
+
+                from Workbench:
+
+                        double-click on its icon
+
+*****************************************************************************
+
+HOW TO USE:
+                After starting you will see a wonderful window.
+                If not, and no errormessage was displayed, you
+                should reboot (can't open ROMLibs/not enought memory).
+
+                You can divide the window in 3 parts.
+
+                the first part is the GADGETCONTROL-part.
+                From this part you can control all actions.
+
+                the second part is the INFOBLOCK (box below)
+                here you can see some informations about the current song
+
+                last but not least there is the PLAYCONTROL (right box)
+                there are a lot of LEDs there......
+
+-----------------------------------------------------------------------------
+
+GADGET-CONTROL:
+                All Gadgets (except the cyclegadgets) can be controlled
+                by the keyboard.
+
+-----------------------------------------------------------------------------
+Gadgetname      Key     Function
+-----------------------------------------------------------------------------
+Loadtype        ---     here you can choose the data type you want to load
+
+                        Load mdat.& smpl. files:
+                        you must load a mdat. file (the smpl. file will
+                        be loaded automatically)
+
+                        Load only mdat / Load only smpl:
+                        you're able to load data in seperate ways.
+-----------------------------------------------------------------------------
+Playtype        ---     on which way do you want to play ?
+
+                        Normal Song:
+                        you can play 32 different songs (NO 8V Modules)
+
+                        Play Effect:
+                        you can play 64 effects & 32 songs (NO 8V Mods)
+                        Not all Modules support this.
+
+                        Play 8 Voice:
+                        here it's possible to play 8V Modules like
+                        Turrican II Titlesong.
+                        ATTENTION: This will slow down the system if you
+                                   have only a 68000 CPU.
+-----------------------------------------------------------------------------
+Load            l       a filerequester will appear and you can choose
+                        a file. Take a look at the titlebar or at the
+                        loadtypegadget to realize what shit you'll load.
+-----------------------------------------------------------------------------
+Sleep           e       shut down the window
+                        to wake up you can press 'e' again or use the
+                        right mousebutton.
+-----------------------------------------------------------------------------
+About           a       get some informations about me, myself and I
+-----------------------------------------------------------------------------
+0               0       set songnumber to 0 (ZERO)
+-----------------------------------------------------------------------------
+Play            p       yeah, you found the key to sound. Press it to
+                        play a loaded song or to restart one
+-----------------------------------------------------------------------------
+Stop            s       press it to stop anything
+-----------------------------------------------------------------------------
+-/+             -/+     previous/next song
+-----------------------------------------------------------------------------
+Remove          r       if you press this gadget (or key) you will remove
+                        all songdata (samples & musicfile).
+                        You should use it when you have memory problems.
+-----------------------------------------------------------------------------
+Timer           t       you can turn on/off the songtimer.
+-----------------------------------------------------------------------------
+C               c       Continue        - NOT IMPLEMENTED (YET) -
+-----------------------------------------------------------------------------
+F               f       you can toggle the audiofilter
+-----------------------------------------------------------------------------
+CLOSEGADGET     q       Quit program - anything will be removed
+
+
+
+
+
+INFOBLOCK (this is the 3D-Box below)
+
+                Songnumber:     here you can see the current songnumber
+                                (0-32 in Normal & 8Voice Mode)
+                                (0-92 in Special Mode)
+
+                Musicmemory:    Memoryusage of the mdat. file (Bytes)
+                Samplememory:   Memoryusage of the smpl. file (Bytes)
+                        
+                The names of the loaded files are displayed, too.
+                If they are mdat. & smpl. files you'll see the names cut.
+
+                Example: you loaded the files: mdat.Test smpl.Test
+                         .Test & .Test will be displayed
+
+
+
+PLAYCONTROLBLOCK (this is the box at the right)
+
+                You see some LEDs which will be active or inactive.
+
+                Song-Type:
+                Effect will be setted when current song is an effect (0-64)
+                Otherwise song will be active
+
+                Play-Type:
+                Here you can see in which way you play the current song
+
+                Playing:
+                Hope you know what it'll displays (useful when any song
+                or effect stops)
+
+                Time: (& clock below)
+                you must be a KNARF (the greatest piece of shit ever made)
+                if you don't understand this.
+
+*****************************************************************************
+ERRORMESSAGES:
+
+                NO MUSICDATA LOADED
+                - there's no musicdata in memory
+                        - load some mdat. files (or any kind of musicdata)
+
+                NO SAMPLEDATA LOADED
+                - no samples available
+                        - load some
+
+                NOT ENOUGH MEMORY
+                - you have not enough memory
+                        - free some (quit other programs)
+
+                DIDN'T FIND COUPLE-FILES
+                - you loaded something ok, BUT
+                        - YOU SHOULD A MDAT. FILE AND THERE MUST BE A
+                          SMPL. FILE !!!!!!
+
+                THIS IS A 4 VOICE SONG
+                - still not implemented 
+
+                THIS IS A 8 VOICE SONG
+                - still not implemented 
+
+                NOT AN ORIGINAL MUSICFILE
+                - your musicdata is not correct
+                        - be careful ! Playing can be deadly
+
+                DISKERROR - 0xxx -
+                - a doserror appeared.
+                        - take a look in your manual to fix it
+*****************************************************************************
+BUGS/WARNINGS:
+
+                Clock   - sometimes (while using other interrupts)
+                          the clock will crash.
+                        - use the Timergadget to solve problems
+
+                The JPClock-Syndrom
+                        - if you go sleeping while using JPClock
+                          you wonder (me too) why my window
+                          will be refreshed every second.
+                        - remove JPClock
+
+                The BEEP
+                        - your system can crash when using a program
+                          which uses some sounds like the beep.
+                        - press 'stop' while using them.
+
+*****************************************************************************
+THANKS TO:
+
+                J.Hippel/C.Huelsbeck
+                        - TFMX is the best on the Amiga
+
+                BSI
+                        - great optimizing and ideas
+
+                HiSoft
+                        - Devpac Assembler
+
+*****************************************************************************
+HISTORY
+
+        TFMXPlayer V1.0:- Plays 4-voices TFMX-modules
+                        - very simple player
+
+        TFMXPlayer V1.1:- Errormessages added
+                        - 'Again' gadget added
+                        - Checks for right module
+                        - Kick 2.04 feeling
+
+        TFMXPlayer V1.2 - fixed some bugs
+                        - fixed bugs in structures
+                        - now 99.9% on KICK 2.04
+                        - speeding up some routines
+
+        TFMXPlayer V1.3 - found & fixed bugs in load routine
+                        - found & fixed bugs in add/sub special
+                        - found & fixed bugs in graphic
+                        - new songnr. display
+
+        TFMXPlayer V1.4 - finally no breakdowns with multitasking
+                        - diskerror will be identified
+                        - a lot of relocs are gone ...
+                        - fixed a last bug in the graphic
+
+        TFMXPlayer V1.5 - found & fixed a nasty WBStartup bug
+                        - fixed last (?) bugs in errordisplayroutines
+                        - finally fixed heavy bug in the mainroutine
+
+        TFMXPlayer V1.6 - fixed last (!) bug in WBStartup
+                        - added the memory display
+                        - added some intern routines
+                        - speeding up routines
+                        - general bug-search (fixed all now (?))
+                        - changed the graphic (just some pixels)
+
+        TFMXPlayer V1.7 - general upspeeding...
+                        - playroutine made safer 4 multitasking
+                        - supporting domuch.library !
+
+        TFMXPlayer V1.8 - general re-coding of some routines
+                        - added WB-ErrorMsg
+
+        TFMXPlayer V1.9 - added asl.library support
+
+        TFMXPlayer V2.0 - added own StopSound Routine (Sorry about loops....)
+
+        TFMXPlayer V2.1 - added Version (Kick2.0) & creates own process
+
+        TFMXPlayer V2.2 - fixed nasty closewindow bug
+                        - asl.library V38+ support (no structure-hacking)
+                        - added a lot of new loadroutine code
+
+
+        TFMXPlayer V3.0 - only Kick 2.04
+                        - coded everything again
+                        - sleep option added
+                        - new TFMXPlayRoutine (c) by BSI
+                                - IRQs corrected (hello HD-Users)
+                                - Optimized & Recoded & Bug-freed
+                        - 8 Voice support
+
+        TFMXPlayer V3.1 - internal affairs
+                        - bug(gy) Version !
+
+        TFMXPlayer V3.2 - optimizing code
+                        - new TFMXPlayRoutine (c) by BSI
+                        - new 8 Voice Routine (c) by myself
+                        - Remove-Gadget added
+                        - ControlPanel added
+                        - fixed bugs (sleep)
+                        - improved ErrorDisplayRoutine
+
+        TFMXPlayer V3.21
+                        - final 4V Routine (C) by BSI
+                        - added Filter gadget
+                        - removed some relocs
+                        - recoded the ErrorRequesterRoutine (great)
+
+
+
+FUTURE:
+        TFMXPlayer V2.3 - final version for Kick 1.2/1.3
+
+        TFMXPlayer V3.3 - fix JPClock-Syndrom
+                        - remove last relocs (Gadget-Structures)
+                        - new improved 8V routine
+                        - supporting continue function
+                        - recognizing 4 or 8 Voice Module
+
+*****************************************************************************
+TFMX-Player V3.21 was written on an Amiga 500 (3 MB/Kick2.04)
+and was tested on an Amiga 500 (68030 CPU / 5 MB / Kick2.04)
+
+
+Enjoy the great songs.
+
+                                THE SWING >;)

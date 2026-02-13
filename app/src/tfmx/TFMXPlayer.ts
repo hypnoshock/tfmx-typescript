@@ -909,9 +909,12 @@ export class TFMXPlayer {
 
           case 3: {
             // timeshare
-            let tsX = l[3];
+            // C code: x=l[3]; x=((char)x)<-0x20?-0x20:(char)x;
+            // The (char) cast takes the LOW BYTE and sign-extends it.
+            // e.g. l[3]=0x00EE → (char)0xEE = -18
+            const tsX = l[3];
             if (!(tsX & 0x8000)) {
-              let signedX = toS16(tsX);
+              let signedX = toS8(tsX & 0xFF);
               if (signedX < -0x20) signedX = -0x20;
               this.mdb.CIASave = this.eClocks = Math.floor((14318 * (signedX + 100)) / 100);
               this.multimode = 1;
