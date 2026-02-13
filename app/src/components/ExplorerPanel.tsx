@@ -62,7 +62,8 @@ function SamplesTab({
     (sample: SampleInfo) => {
       const floatData = sampleToFloat32(data, sample);
       // Amiga base sample rate ≈ 16574 Hz (PAL C-3 period 0x12F)
-      audio.playSample(floatData, 16574);
+      // Play at half speed (8287 Hz) for a more natural pitch
+      audio.playSample(floatData, 8287);
     },
     [data, audio],
   );
