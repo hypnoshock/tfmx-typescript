@@ -973,8 +973,11 @@ export class TFMXPlayer {
     }
 
     // Update modulator 1
+    // Assembly: move.w ims_mod1add,d0; ext.l d0; add.l d0,ims_mod1
+    // Add the 16-bit increment (sign-extended to 32-bit) directly, NO SHIFT
     if (c.ImsMod1Add !== 0) {
-      c.ImsMod1 = toS32(c.ImsMod1 + (toS16(c.ImsMod1Add) << 16));
+      const increment = toS16(c.ImsMod1Add);
+      c.ImsMod1 = toS32(c.ImsMod1 + increment);
       c.ImsMod1Len--;
       if (!c.ImsMod1Len) {
         c.ImsMod1Len = c.ImsMod1Len2;
@@ -985,8 +988,10 @@ export class TFMXPlayer {
     }
 
     // Update modulator 2
+    // Assembly: move.w ims_mod2add,d0; ext.l d0; add.l d0,ims_mod2
     if (c.ImsMod2Add !== 0) {
-      c.ImsMod2 = toS32(c.ImsMod2 + toS16(c.ImsMod2Add));
+      const increment = toS16(c.ImsMod2Add);
+      c.ImsMod2 = toS32(c.ImsMod2 + increment);
       c.ImsMod2Len--;
       if (!c.ImsMod2Len) {
         c.ImsMod2Len = c.ImsMod2Len2;
