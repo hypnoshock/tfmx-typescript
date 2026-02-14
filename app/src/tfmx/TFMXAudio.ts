@@ -93,6 +93,42 @@ export class TFMXAudio {
   }
 
   /**
+   * Step forward by one trackstep position.
+   */
+  stepPositionForward(): void {
+    this.player.stepPositionForward();
+  }
+
+  /**
+   * Step backward by one trackstep position.
+   */
+  stepPositionBackward(): void {
+    this.player.stepPositionBackward();
+  }
+
+  /**
+   * Toggle loop-current-position mode.
+   * Returns the new state (true = enabled, false = disabled).
+   */
+  togglePositionLoop(): boolean {
+    return this.player.togglePositionLoop();
+  }
+
+  /**
+   * Check if position loop is enabled.
+   */
+  isPositionLoopEnabled(): boolean {
+    return this.player.isPositionLoopEnabled();
+  }
+
+  /**
+   * Get position range information.
+   */
+  getPositionRange(): { first: number; last: number; current: number } {
+    return this.player.getPositionRange();
+  }
+
+  /**
    * Load TFMX module data
    */
   load(data: TFMXData): void {

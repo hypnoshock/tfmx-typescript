@@ -255,3 +255,117 @@
   box-shadow: 0 0 16px var(--accent-glow);
 }
 
+/* Position Controls */
+.position-section {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.position-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.position-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.position-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+}
+
+.position-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(108, 99, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.position-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.position-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.position-loop-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 0.25rem;
+}
+
+.position-loop-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(108, 99, 255, 0.1);
+}
+
+.position-loop-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.position-loop-btn.active:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.position-loop-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.position-display {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.position-separator {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.position-total {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+

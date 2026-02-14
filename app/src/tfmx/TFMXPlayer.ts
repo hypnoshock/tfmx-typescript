@@ -37,6 +37,11 @@ export class TFMXPlayer {
   dangerFreakHack = 0;
   loops = 0; // 0 = infinite looping, >0 = number of loops, <0 = stop at end
 
+  // Position loop state
+  private _originalFirstPos: number = 0;
+  private _originalLastPos: number = 0;
+  private _positionLoopEnabled: boolean = false;
+
   // Track muting (8 tracks)
   trackMuted: boolean[] = Array(8).fill(false);
 
@@ -1576,9 +1581,17 @@ export class TFMXPlayer {
     this.mdb.CIASave = this.eClocks = DEFAULT_ECLOCKS;
     this.loops = 0; // Reset to infinite looping for each new song
 
+    // Reset position loop state
+    this._positionLoopEnabled = false;
+
     if (mode !== 2) {
       this.pdb.CurrPos = this.pdb.FirstPos = this.data.hdr.start[song];
       this.pdb.LastPos = this.data.hdr.end[song];
+
+      // Store original bounds for position loop toggle
+      this._originalFirstPos = this.pdb.FirstPos;
+      this._originalLastPos = this.pdb.LastPos;
+
       const tempo = this.data.hdr.tempo[song];
       if (tempo >= 0x10) {
         this.mdb.CIASave = this.eClocks = Math.floor(0x1B51F8 / tempo);
@@ -1687,6 +1700,102 @@ export class TFMXPlayer {
     return {
       currPos: this.pdb.CurrPos,
       tracks,
+    };
+  }
+
+  // --- Position Control Methods ---
+
+  /**
+   * Navigate to a specific trackstep position.
+   * Updates CurrPos and triggers getTrackStep() to load new patterns.
+   */
+  setPosition(pos: number): void {
+    if (!this.data) return;
+
+    // Clamp position to valid range
+    const minPos = this._positionLoopEnabled ? this.pdb.FirstPos : this._originalFirstPos;
+    const maxPos = this._positionLoopEnabled ? this.pdb.LastPos : this._originalLastPos;
+
+    if (pos < minPos) pos = minPos;
+    if (pos > maxPos) pos = maxPos;
+
+    this.pdb.CurrPos = pos;
+    this.getTrackStep();
+  }
+
+  /**
+   * Advance position by one trackstep.
+   * Wraps from LastPos to FirstPos.
+   */
+  stepPositionForward(): void {
+    if (!this.data) return;
+
+    const nextPos = this.pdb.CurrPos + 1;
+    if (nextPos > this.pdb.LastPos) {
+      this.setPosition(this.pdb.FirstPos);
+    } else {
+      this.setPosition(nextPos);
+    }
+  }
+
+  /**
+   * Go back by one trackstep.
+   * Wraps from FirstPos to LastPos.
+   */
+  stepPositionBackward(): void {
+    if (!this.data) return;
+
+    const prevPos = this.pdb.CurrPos - 1;
+    if (prevPos < this.pdb.FirstPos) {
+      this.setPosition(this.pdb.LastPos);
+    } else {
+      this.setPosition(prevPos);
+    }
+  }
+
+  /**
+   * Toggle loop-current-position mode.
+   * When enabled, locks FirstPos and LastPos to CurrPos.
+   * When disabled, restores original song boundaries.
+   * @returns The new state (true = enabled, false = disabled)
+   */
+  togglePositionLoop(): boolean {
+    if (!this.data) return false;
+
+    this._positionLoopEnabled = !this._positionLoopEnabled;
+
+    if (this._positionLoopEnabled) {
+      // Store original bounds before locking
+      this._originalFirstPos = this.pdb.FirstPos;
+      this._originalLastPos = this.pdb.LastPos;
+
+      // Lock to current position
+      this.pdb.FirstPos = this.pdb.CurrPos;
+      this.pdb.LastPos = this.pdb.CurrPos;
+    } else {
+      // Restore original bounds
+      this.pdb.FirstPos = this._originalFirstPos;
+      this.pdb.LastPos = this._originalLastPos;
+    }
+
+    return this._positionLoopEnabled;
+  }
+
+  /**
+   * Get position loop state.
+   */
+  isPositionLoopEnabled(): boolean {
+    return this._positionLoopEnabled;
+  }
+
+  /**
+   * Get total positions in current song.
+   */
+  getPositionRange(): { first: number; last: number; current: number } {
+    return {
+      first: this._positionLoopEnabled ? this._originalFirstPos : this.pdb.FirstPos,
+      last: this._positionLoopEnabled ? this._originalLastPos : this.pdb.LastPos,
+      current: this.pdb.CurrPos,
     };
   }
 }

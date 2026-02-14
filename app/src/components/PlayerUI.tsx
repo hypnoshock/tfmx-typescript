@@ -23,6 +23,7 @@ export function PlayerUI() {
     tracks: Array.from({ length: 8 }, () => ({ patternNum: -1, currentStep: 0, active: false, channelVolumes: Array(7).fill(0) })),
   });
   const [trackMuted, setTrackMuted] = useState<boolean[]>(Array(8).fill(false));
+  const [positionLoopEnabled, setPositionLoopEnabled] = useState(false);
 
   const getAudio = useCallback((): TFMXAudio => {
     if (!audioRef.current) {
@@ -122,6 +123,34 @@ export function PlayerUI() {
     const newMuted = !audio.isTrackMuted(track);
     audio.setTrackMuted(track, newMuted);
     setTrackMuted(audio.getTrackMuteState());
+  }, [getAudio]);
+
+  const handleStepForward = useCallback(() => {
+    const audio = getAudio();
+    audio.stepPositionForward();
+
+    // If paused, immediately update display state
+    if (!isPlaying && audioRef.current) {
+      const state = audioRef.current.playerInstance.getDisplayState();
+      setDisplayState(state);
+    }
+  }, [getAudio, isPlaying]);
+
+  const handleStepBackward = useCallback(() => {
+    const audio = getAudio();
+    audio.stepPositionBackward();
+
+    // If paused, immediately update display state
+    if (!isPlaying && audioRef.current) {
+      const state = audioRef.current.playerInstance.getDisplayState();
+      setDisplayState(state);
+    }
+  }, [getAudio, isPlaying]);
+
+  const handleTogglePositionLoop = useCallback(() => {
+    const audio = getAudio();
+    const newState = audio.togglePositionLoop();
+    setPositionLoopEnabled(newState);
   }, [getAudio]);
 
   // Poll player state at ~60fps for the pattern display
@@ -244,6 +273,57 @@ export function PlayerUI() {
               </svg>
             </button>
           </div>
+
+          {/* Position Controls */}
+          {data && (
+            <div className="position-section">
+              <div className="position-label">Position</div>
+              <div className="position-controls">
+                <button
+                  className="position-btn"
+                  onClick={handleStepBackward}
+                  disabled={!data}
+                  title="Previous position"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                  </svg>
+                </button>
+
+                <div className="position-display">
+                  <span className="position-current">
+                    {String(displayState.currPos).padStart(2, '0')}
+                  </span>
+                  <span className="position-separator">/</span>
+                  <span className="position-total">
+                    {String(audioRef.current?.getPositionRange().last ?? 0).padStart(2, '0')}
+                  </span>
+                </div>
+
+                <button
+                  className="position-btn"
+                  onClick={handleStepForward}
+                  disabled={!data}
+                  title="Next position"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                  </svg>
+                </button>
+
+                <button
+                  className={`position-loop-btn ${positionLoopEnabled ? 'active' : ''}`}
+                  onClick={handleTogglePositionLoop}
+                  disabled={!data}
+                  title={positionLoopEnabled ? "Disable position loop" : "Loop current position"}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Explorer Panel — beside the player controls */}
