@@ -373,19 +373,15 @@ export class TFMXPlayer {
 
         case 0x01: {
           // DMAon
+          // The assembly (mdmaon) only sets EfxRun and DMA enable bits.
+          // It does NOT set sample address/length - that's done by SetBegin/IMS Start.
+          // Setting address here would overwrite IMS buffer settings!
           c.EfxRun = x.b1;
           hw.mode = 1;
           if (!c.NewStyleMacro || this.dangerFreakHack) {
-            hw.SampleStart = c.SaveAddr;
-            hw.SampleLength = c.SaveLen ? c.SaveLen << 1 : 131072;
-            hw.sbeg = hw.SampleStart;
-            hw.slen = hw.SampleLength;
-            hw.pos = 0;
             hw.mode |= 2;
-            break;
-          } else {
-            break;
           }
+          break;
         }
 
         case 0x02: {
