@@ -1426,6 +1426,13 @@ export class TFMXPlayer {
           }
           p.PLoop--;
           p.PStep = x.w1;
+
+          // zero loops act likke infinite loops as p.PLoop is set to 0 and on an Amiga,
+          // the counter is 16bit, so the decrement will underflow to 0xFFFF.
+          if (p.PLoop < 0) {
+            p.PLoop = 0xFFFF;
+          }
+
           break;
         }
 
