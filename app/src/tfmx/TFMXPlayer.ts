@@ -10,7 +10,7 @@
 import type {
   Hdb, Mdb, Cdb, Pdb, Pdblk, Idb, TFMXData, LoopFunc,
 } from './types';
-import { UNI, toS8, toS16 } from './types';
+import { UNI, toS8, toS16, toS32 } from './types';
 import { NOTEVALS, DEFAULT_ECLOCKS } from './constants';
 
 export class TFMXPlayer {
@@ -44,6 +44,11 @@ export class TFMXPlayer {
 
   // Output rate (needed for period -> delta conversion)
   outRate = 44100;
+
+  // IMS (Integrated Music Synthesizer) buffer
+  // 0x200 bytes per channel: 0x100 for main buffer, 0x100 for surround
+  // Channels can use this for real-time sample synthesis
+  imsBuffer: Int8Array = new Int8Array(0x200 * 8); // 512 bytes * 8 channels
 
   constructor() {
     this.initStructs();
@@ -108,6 +113,7 @@ export class TFMXPlayer {
       loop: this.loopOff,
       loopcnt: 0,
       cIdx: idx,
+      useImsBuffer: false,
     };
   }
 
@@ -159,13 +165,49 @@ export class TFMXPlayer {
       SfxNum: 0,
       SfxLockTime: -1,
       SfxCode: 0,
+      // IMS fields
+      ImsStart: 0,
+      ImsLength: 0,
+      ImsDeltaLen: 0,
+      ImsDeltaOffs: 0,
+      ImsMod1: 0,
+      ImsMod1Len: 0,
+      ImsMod1Len2: 0,
+      ImsMod1Add: 0,
+      ImsMod2: 0,
+      ImsMod2Len: 0,
+      ImsMod2Len2: 0,
+      ImsMod2Add: 0,
+      ImsDelta: 0,
+      ImsDeltaOld: 0,
+      ImsFSpeed: 0,
+      ImsFLen1: 0,
+      ImsFLen2: 0,
+      ImsDolby: 0,
+      // AddBegin vibrato
+      AddBeginCount1: 0,
+      AddBeginCount2: 0,
+      // Riff playback
+      RiffStats: 0,
+      RiffMacro: 0,
+      RiffSpeed: 0,
+      RiffCount: 0,
+      RiffTrigg: 0,
+      RiffAND: 0,
+      // Skip flag
+      SkipFlag: 0,
       hwIdx: idx,
     };
   }
 
   private initStructs(): void {
     this.hdb = Array.from({ length: 8 }, (_, i) => this.createHdb(i));
-    this.cdb = Array.from({ length: 16 }, (_, i) => this.createCdb(i));
+    this.cdb = Array.from({ length: 16 }, (_, i) => {
+      const c = this.createCdb(i);
+      // Set up IMS delta buffer offset for each channel (0x200 bytes per channel)
+      c.ImsDeltaOffs = i * 0x200;
+      return c;
+    });
   }
 
   // --- Loop callbacks ---
@@ -294,12 +336,15 @@ export class TFMXPlayer {
 
       switch (a) {
         case 0x00: {
-          // DMAoff+Reset
+          // DMAoff+Reset: reset all effects and IMS
           c.EnvReset = 0;
           c.VibReset = 0;
           c.PortaRate = 0;
           c.AddBeginTime = 0;
+          c.RiffStats = 0;
+          c.ImsDeltaLen = 0;
 
+          // Gem'X volume fix
           if (this.gemx) {
             if (x.b2) {
               c.CurVol = x.b3;
@@ -345,18 +390,25 @@ export class TFMXPlayer {
 
         case 0x02: {
           // SetBegin
+          c.AddBeginCount1 = 0;
           c.AddBeginTime = 0;
           c.SaveAddr = c.CurAddr = x.l;
           break;
         }
 
         case 0x11: {
-          // AddBegin
+          // AddBegin: vibrato sample address
+          c.AddBeginCount1 = x.b1;
+          c.AddBeginCount2 = x.b1;
           c.AddBeginTime = c.AddBeginReset = x.b1;
           const delta = toS16(x.w1);
           c.AddBegin = delta;
           const addr = c.CurAddr + delta;
           c.SaveAddr = c.CurAddr = addr;
+          // If IMS is active, also set IMS start
+          if (c.ImsDeltaLen) {
+            c.ImsStart = addr;
+          }
           break;
         }
 
@@ -580,7 +632,10 @@ export class TFMXPlayer {
         }
 
         case 0x0A: {
-          // Reset effects
+          // Clear: reset all effects, IMS, and AddBegin
+          c.RiffStats = 0;
+          c.ImsDeltaLen = 0;
+          c.AddBeginCount1 = 0;
           c.EnvReset = 0;
           c.VibReset = 0;
           c.PortaRate = 0;
@@ -651,27 +706,159 @@ export class TFMXPlayer {
           break;
         }
 
-        // SID commands (0x22-0x29, 0x30) - mostly stubs
+        // IMS (Integrated Music Synthesizer) commands 0x22-0x29
         case 0x22: {
-          // SID setbeg (approximate: treat like SetBegin)
-          c.AddBeginTime = 0;
-          c.CurAddr = x.l;
+          // IMS Start: set IMS sample start address
+          c.AddBeginCount1 = 0;
+          const addr = x.l;
+          c.ImsStart = addr;
+          c.CurAddr = addr;
+          c.SaveAddr = addr;
+          // Set hardware address to IMS delta buffer
+          hw.SampleStart = c.ImsDeltaOffs;
+          hw.sbeg = hw.SampleStart;
+          hw.pos = 0;
+          hw.useImsBuffer = true;
           break;
         }
-        case 0x23:
-        case 0x24:
-        case 0x25:
-        case 0x26:
-        case 0x27:
-        case 0x28:
-        case 0x29:
+
+        case 0x23: {
+          // IMS Length: set IMS buffer length and sample length
+          let len = x.w0;
+          if (len === 0) len = 0x100;
+          // Hardware length is in words (divide by 2)
+          hw.SampleLength = (len >> 1) << 1; // ensure even
+          hw.slen = hw.SampleLength;
+          // Store IMS delta length (length - 1) masked to byte
+          c.ImsDeltaLen = (len - 1) & 0xFF;
+          c.ImsLength = x.w1;
+          c.SaveLen = c.CurrLength = x.w1;
+          break;
+        }
+
+        case 0x24: {
+          // IMS Set Modulator 1
+          c.ImsMod1 = toS32(x.l << 8);
+          break;
+        }
+
+        case 0x25: {
+          // IMS Modulate Modulator 1
+          c.ImsMod1Len = x.w0;
+          c.ImsMod1Len2 = x.w0;
+          c.ImsMod1Add = toS16(x.w1);
+          break;
+        }
+
+        case 0x26: {
+          // IMS Set Modulator 2
+          c.ImsMod2 = toS32(x.l);
+          break;
+        }
+
+        case 0x27: {
+          // IMS Modulate Modulator 2
+          c.ImsMod2Len = x.w0;
+          c.ImsMod2Len2 = x.w0;
+          c.ImsMod2Add = toS16(x.w1);
+          break;
+        }
+
+        case 0x28: {
+          // IMS Delta: set frequency modulation and interpolation
+          c.ImsDelta = toS8(x.b3);
+          const fspeed = toS8(x.b2) << 4; // extend to word and shift
+          c.ImsFSpeed = fspeed;
+          c.ImsFLen1 = x.w0;
+          c.ImsFLen2 = x.w0;
+          break;
+        }
+
+        case 0x29: {
+          // IMS Off: disable IMS synthesis
+          c.ImsDeltaLen = 0;
+          hw.useImsBuffer = false;
+          if (x.b1 !== 0) {
+            // Clear all IMS parameters
+            c.ImsMod1 = 0;
+            c.ImsMod1Len = 0;
+            c.ImsMod1Len2 = 0;
+            c.ImsMod1Add = 0;
+            c.ImsMod2 = 0;
+            c.ImsMod2Len = 0;
+            c.ImsMod2Len2 = 0;
+            c.ImsMod2Add = 0;
+            c.ImsDelta = 0;
+            c.ImsFSpeed = 0;
+            c.ImsFLen1 = 0;
+            c.ImsFLen2 = 0;
+            c.ImsDolby = x.b3;
+          }
+          break;
+        }
+
+        case 0x2A: {
+          // Mac3: just advance macro step without MAYBEWAIT
+          // (used for commands that should never trigger DMA wait)
+          break;
+        }
+
+        case 0x2B: {
+          // CheckSetRnd: random number generator check/set
+          // This is a complex command used rarely - stub for now
+          break;
+        }
+
+        case 0x2C: {
+          // ByteSet: write byte to memory (chipram)
+          // Not safe to implement in browser - ignore
+          break;
+        }
+
+        case 0x2D: {
+          // ByteCheck: check byte in memory and conditionally skip
+          // Not safe to implement in browser - always skip
+          c.MacroStep++;
+          break;
+        }
+
+        case 0x2E: {
+          // SetChip: write word to chip register
+          // Not safe to implement in browser - ignore
+          break;
+        }
+
+        case 0x2F: {
+          // MoveNextTo: copy next macro statement to another macro
+          // Complex command rarely used - skip 2 steps
+          c.MacroStep++;
+          break;
+        }
+
         case 0x30: {
-          // SID commands - not implemented
+          // Skip: conditional skip based on skip flag
+          if (!c.SkipFlag) {
+            c.SkipFlag = 0xFF;
+            break;
+          }
+          c.MacroStep = x.w1;
           break;
         }
 
         case 0x31: {
-          // Turrican 3 title - safely ignore
+          // SKeyUp: send key-up command to current channel
+          const keyUpCmd = 0xF5000000 | (x.b2 << 8);
+          this.notePort(keyUpCmd >>> 0);
+          break;
+        }
+
+        case 0x32: {
+          // AddWord: add word to macro step variable (not implemented safely)
+          break;
+        }
+
+        case 0x33: {
+          // AndWord: AND word with macro step variable (not implemented safely)
           break;
         }
 
@@ -685,71 +872,243 @@ export class TFMXPlayer {
     }
   }
 
+  // --- DoImsSynthesis: IMS (Integrated Music Synthesizer) synthesis ---
+  // Ported from assembly line 3351 (imsin:)
+  // This performs real-time sample synthesis with phase modulation
+  private doImsSynthesis(c: Cdb): void {
+    if (!this.data) return;
+
+    const sampleData = this.data.smplbuf;
+    const imsSourceStart = c.ImsStart;
+    let mod1 = c.ImsMod1;
+    const mod2 = c.ImsMod2;
+    const deltaLen = c.ImsDeltaLen;
+    const sampleLen = c.ImsLength;
+    const delta = c.ImsDelta;
+    const dolby = c.ImsDolby;
+    let deltaOld = c.ImsDeltaOld;
+
+    // IMS buffer pointers
+    const imsBufferStart = c.ImsDeltaOffs;
+    const mainBuffer = this.imsBuffer;
+
+    // 32-bit phase accumulator
+    // Format after processing: high 16 bits = fractional, low 16 bits = offset
+    let phaseAccum = 0;
+
+    // Synthesize samples
+    for (let i = 0; i <= deltaLen; i++) {
+      // Add modulator 2 to modulator 1
+      mod1 = toS32(mod1 + mod2);
+
+      // Assembly: swap d0; add.l d4,d0; swap d0; and.w d6,d0
+      // The swap operations reorder the phase accumulator for proper fixed-point math
+      // Simulate the swap: move low word to high, high word to low
+      let swapped = ((phaseAccum & 0xFFFF) << 16) | ((phaseAccum >>> 16) & 0xFFFF);
+      // Add the full 32-bit modulator value
+      swapped = toS32(swapped + mod1);
+      // Swap back: this puts the fractional part in high word, offset in low word
+      phaseAccum = ((swapped & 0xFFFF) << 16) | ((swapped >>> 16) & 0xFFFF);
+
+      // Extract sample offset from low 16 bits and mask with sample length
+      const sampleOffset = (phaseAccum & 0xFFFF) & sampleLen;
+
+      // Read amplitude from source sample
+      let amplitude = sampleData[imsSourceStart + sampleOffset] || 0;
+
+      // Apply delta interpolation if enabled (with saturation)
+      // Assembly uses addx.b/subx.b with overflow checking (bvs)
+      if (delta !== 0) {
+        if (amplitude !== deltaOld) {
+          if (amplitude > deltaOld) {
+            // Ramp up: assembly does addx.b d3,d1; bvs.s .clr; cmp.b d1,d2; bgt.s .set
+            const newDelta = deltaOld + delta;
+            // Check for signed byte overflow (addx.b sets V flag)
+            const overflow = (newDelta > 127 || newDelta < -128);
+            if (overflow) {
+              // Overflow: clamp to target
+              deltaOld = amplitude;
+            } else {
+              // No overflow: check if we overshot the target
+              deltaOld = (newDelta > amplitude) ? amplitude : newDelta;
+            }
+          } else {
+            // Ramp down: assembly does subx.b d3,d1; bvs.s .clr; cmp.b d1,d2; bge.s .clr
+            const newDelta = deltaOld - delta;
+            // Check for signed byte overflow (subx.b sets V flag)
+            const overflow = (newDelta > 127 || newDelta < -128);
+            if (overflow) {
+              // Overflow: clamp to target
+              deltaOld = amplitude;
+            } else {
+              // No overflow: check if we undershot the target
+              deltaOld = (newDelta < amplitude) ? amplitude : newDelta;
+            }
+          }
+          amplitude = deltaOld;
+        }
+      }
+
+      // Write to main IMS buffer
+      mainBuffer[imsBufferStart + i] = amplitude;
+
+      // Write to surround buffer if enabled
+      if (dolby) {
+        mainBuffer[imsBufferStart + 0x100 + i] = -amplitude;
+      }
+    }
+
+    // Store updated state
+    c.ImsMod1 = mod1;
+    c.ImsDeltaOld = deltaOld;
+
+    // Update delta modulation (frequency sweep)
+    if (delta !== 0) {
+      c.ImsDelta = toS8((c.ImsDelta + c.ImsFSpeed) & 0xFFFF);
+      c.ImsFLen1--;
+      if (!c.ImsFLen1) {
+        c.ImsFLen1 = c.ImsFLen2;
+        c.ImsFSpeed = -c.ImsFSpeed;
+      }
+    }
+
+    // Update modulator 1
+    if (c.ImsMod1Add !== 0) {
+      c.ImsMod1 = toS32(c.ImsMod1 + (toS16(c.ImsMod1Add) << 16));
+      c.ImsMod1Len--;
+      if (!c.ImsMod1Len) {
+        c.ImsMod1Len = c.ImsMod1Len2;
+        if (c.ImsMod1Len2) {
+          c.ImsMod1Add = -c.ImsMod1Add;
+        }
+      }
+    }
+
+    // Update modulator 2
+    if (c.ImsMod2Add !== 0) {
+      c.ImsMod2 = toS32(c.ImsMod2 + toS16(c.ImsMod2Add));
+      c.ImsMod2Len--;
+      if (!c.ImsMod2Len) {
+        c.ImsMod2Len = c.ImsMod2Len2;
+        if (c.ImsMod2Len2) {
+          c.ImsMod2Add = -c.ImsMod2Add;
+        }
+      }
+    }
+  }
+
   // --- DoEffects: process per-tick effects for a channel ---
-  // Ported from DoEffects() in player.c
+  // Ported from modulations section in assembly (line 3317+)
   private doEffects(c: Cdb): void {
+    const hw = this.hdb[c.hwIdx];
+
     if (c.EfxRun < 0) return;
     if (!c.EfxRun) {
       c.EfxRun = 1;
       return;
     }
 
-    // AddBegin vibrato
-    if (c.AddBeginTime) {
-      c.CurAddr += c.AddBegin;
-      c.SaveAddr = c.CurAddr;
-      c.AddBeginTime--;
-      if (!c.AddBeginTime) {
+    // AddBegin vibrato (smodin)
+    if (c.AddBeginCount1) {
+      const addr = c.CurAddr + c.AddBegin;
+      c.CurAddr = addr;
+      c.SaveAddr = addr;
+      if (c.ImsDeltaLen) {
+        // If IMS is active, update IMS start instead of hardware address
+        c.ImsStart = addr;
+      } else {
+        // Update hardware address directly
+        hw.SampleStart = addr;
+        hw.sbeg = addr;
+      }
+      c.AddBeginCount1--;
+      if (!c.AddBeginCount1) {
+        c.AddBeginCount1 = c.AddBeginCount2;
         c.AddBegin = -c.AddBegin;
-        c.AddBeginTime = c.AddBeginReset;
       }
     }
 
-    // Vibrato
+    // IMS synthesis (imsin)
+    if (c.ImsDeltaLen) {
+      this.doImsSynthesis(c);
+    }
+
+    // Vibrato (vibratos)
     if (c.VibReset) {
-      let vibA = (c.VibOffset += c.VibWidth);
-      vibA = (c.DestPeriod * (0x800 + vibA)) >> 11;
-      if (!c.PortaRate) c.CurPeriod = vibA;
-      if (!(--c.VibTime)) {
-        c.VibTime = c.VibReset;
+      const vibOffset = c.VibOffset + c.VibWidth;
+      c.VibOffset = vibOffset;
+      let period = c.DestPeriod;
+      if (vibOffset !== 0) {
+        period = (c.DestPeriod * (0x800 + vibOffset)) >>> 11;
+      }
+      if (!c.PortaRate) {
+        c.CurPeriod = period;
+      }
+      c.VibTime--;
+      if (!c.VibTime) {
+        c.VibTime = c.VibReset >> 1;
         c.VibWidth = -c.VibWidth;
       }
     }
 
-    // Portamento
-    if (c.PortaRate && (--c.PortaTime) === 0) {
-      c.PortaTime = c.PortaReset;
-      let portA = 0;
-      if (c.PortaPer > c.DestPeriod) {
-        portA = ((c.PortaPer * (256 - c.PortaRate)) - 128) >> 8;
-        if (portA <= c.DestPeriod) c.PortaRate = 0;
-      } else if (c.PortaPer < c.DestPeriod) {
-        portA = (c.PortaPer * (256 + c.PortaRate)) >> 8;
-        if (portA >= c.DestPeriod) c.PortaRate = 0;
-      } else {
-        c.PortaRate = 0;
+    // Portamento (glides)
+    if (c.PortaRate) {
+      c.PortaTime--;
+      if (!c.PortaTime) {
+        c.PortaTime = c.PortaReset;
+        const destPeriod = c.DestPeriod;
+        let portPer = c.PortaPer;
+
+        if (portPer === destPeriod) {
+          c.PortaRate = 0;
+        } else if (portPer < destPeriod) {
+          // Slide up
+          portPer = (portPer * (256 + c.PortaRate)) >> 8;
+          if (portPer >= destPeriod) {
+            c.PortaRate = 0;
+            portPer = destPeriod;
+          }
+        } else {
+          // Slide down
+          portPer = ((portPer * (256 - c.PortaRate)) - 128) >> 8;
+          if (portPer <= destPeriod) {
+            c.PortaRate = 0;
+            portPer = destPeriod;
+          }
+        }
+
+        portPer &= 0x07FF;
+        c.PortaPer = portPer;
+        c.CurPeriod = portPer;
       }
-      if (!c.PortaRate) portA = c.DestPeriod;
-      c.PortaPer = c.CurPeriod = portA;
     }
 
-    // Envelope
-    if (c.EnvReset && !(c.EnvTime--)) {
-      c.EnvTime = c.EnvReset;
-      if (c.CurVol > c.EnvEndvol) {
-        if (c.CurVol < c.EnvRate) {
+    // Envelope (envelopes)
+    if (c.EnvReset) {
+      if (!c.EnvTime) {
+        c.EnvTime = c.EnvReset;
+        const endVol = c.EnvEndvol;
+        let curVol = c.CurVol;
+
+        if (curVol === endVol) {
           c.EnvReset = 0;
+        } else if (curVol > endVol) {
+          curVol -= c.EnvRate;
+          if (curVol <= endVol) {
+            c.EnvReset = 0;
+            curVol = endVol;
+          }
         } else {
-          c.CurVol -= c.EnvRate;
+          curVol += c.EnvRate;
+          if (curVol >= endVol) {
+            c.EnvReset = 0;
+            curVol = endVol;
+          }
         }
-        if (c.EnvEndvol > c.CurVol) c.EnvReset = 0;
-      } else if (c.CurVol < c.EnvEndvol) {
-        c.CurVol += c.EnvRate;
-        if (c.EnvEndvol < c.CurVol) c.EnvReset = 0;
-      }
-      if (!c.EnvReset) {
-        c.EnvReset = c.EnvTime = 0;
-        c.CurVol = c.EnvEndvol;
+
+        c.CurVol = curVol;
+      } else {
+        c.EnvTime--;
       }
     }
 
@@ -793,8 +1152,20 @@ export class TFMXPlayer {
 
     // Update hardware channel
     hw.delta = c.CurPeriod ? ((3579545 << 9) / ((c.CurPeriod * this.outRate) >> 5)) >>> 0 : 0;
-    hw.SampleStart = c.SaveAddr;
-    hw.SampleLength = c.SaveLen ? c.SaveLen << 1 : 131072;
+
+    // If IMS is active, use IMS buffer; otherwise use regular sample
+    if (c.ImsDeltaLen) {
+      // IMS mode: play from synthesized buffer
+      hw.SampleStart = c.ImsDeltaOffs;
+      hw.SampleLength = (c.ImsDeltaLen + 1);
+      hw.useImsBuffer = true;
+    } else {
+      // Normal mode: play from sample data
+      hw.SampleStart = c.SaveAddr;
+      hw.SampleLength = c.SaveLen ? c.SaveLen << 1 : 131072;
+      hw.useImsBuffer = false;
+    }
+
     if ((hw.mode & 3) === 1) {
       hw.sbeg = hw.SampleStart;
       hw.slen = hw.SampleLength;

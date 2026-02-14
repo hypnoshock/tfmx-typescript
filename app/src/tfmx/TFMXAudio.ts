@@ -376,8 +376,9 @@ export class TFMXAudio {
   private mixAdd(hw: Hdb, n: number, buf: Float64Array): void {
     if (!this.data) return;
 
-    const smplbuf = this.data.smplbuf;
-    let p = hw.sbeg; // offset into smplbuf
+    // Select the correct sample buffer (IMS buffer or normal sample buffer)
+    const sampleBuffer = hw.useImsBuffer ? this.player.imsBuffer : this.data.smplbuf;
+    let p = hw.sbeg; // offset into sampleBuffer
     let ps = hw.pos;  // fixed-point position (14-bit fraction)
     const v = Math.min(hw.vol, 0x40);
     let d = hw.delta;
@@ -405,17 +406,17 @@ export class TFMXAudio {
       ps += d;
 
       const sampleIdx = p + (ps >> 14);
-      if (sampleIdx >= 0 && sampleIdx < smplbuf.length) {
+      if (sampleIdx >= 0 && sampleIdx < sampleBuffer.length) {
         if (this.oversampling) {
           // Linear interpolation (mix_add_ov)
-          const v1 = smplbuf[sampleIdx] || 0;
+          const v1 = sampleBuffer[sampleIdx] || 0;
           const nextIdx = sampleIdx + 1;
-          const v2 = (nextIdx < smplbuf.length) ? (smplbuf[nextIdx] || 0) : 0;
+          const v2 = (nextIdx < sampleBuffer.length) ? (sampleBuffer[nextIdx] || 0) : 0;
           const frac = ps & 0x3FFF;
           const sample = v1 + (((v2 - v1) * frac) >> 14);
           buf[i] += sample * v;
         } else {
-          buf[i] += (smplbuf[sampleIdx] || 0) * v;
+          buf[i] += (sampleBuffer[sampleIdx] || 0) * v;
         }
       }
 

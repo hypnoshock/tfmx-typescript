@@ -12,13 +12,14 @@ export interface Hdb {
   delta: number;         // U32 - fixed-point step per output sample
   slen: number;          // U16 - current sample length (in bytes)
   SampleLength: number;  // U16 - loop sample length
-  sbeg: number;          // offset into smplbuf (current play pointer)
-  SampleStart: number;   // offset into smplbuf (loop start)
+  sbeg: number;          // offset into smplbuf or imsBuffer (current play pointer)
+  SampleStart: number;   // offset into smplbuf or imsBuffer (loop start)
   vol: number;           // U8  - channel volume (0-64)
   mode: number;          // U8  - DMA mode flags
   loop: LoopFunc;        // loop callback
   loopcnt: number;
   cIdx: number;          // index into cdb[] (replaces pointer)
+  useImsBuffer: boolean; // true if playing from IMS buffer, false if from smplbuf
 }
 
 export type LoopFunc = (hw: Hdb) => number;
@@ -141,6 +142,41 @@ export interface Cdb {
   SfxNum: number;         // U8
   SfxLockTime: number;    // S16
   SfxCode: number;        // U32
+
+  // IMS (Integrated Music Synthesizer) fields for SID-like synthesis
+  ImsStart: number;       // U32 - IMS sample start address
+  ImsLength: number;      // U16 - IMS sample length
+  ImsDeltaLen: number;    // U16 - IMS delta buffer length
+  ImsDeltaOffs: number;   // U32 - IMS delta buffer offset
+  ImsMod1: number;        // S32 - IMS modulator 1 (phase accumulator)
+  ImsMod1Len: number;     // U16 - IMS mod1 length counter
+  ImsMod1Len2: number;    // U16 - IMS mod1 length reset value
+  ImsMod1Add: number;     // S16 - IMS mod1 increment
+  ImsMod2: number;        // S32 - IMS modulator 2 (phase accumulator)
+  ImsMod2Len: number;     // U16 - IMS mod2 length counter
+  ImsMod2Len2: number;    // U16 - IMS mod2 length reset value
+  ImsMod2Add: number;     // S16 - IMS mod2 increment
+  ImsDelta: number;       // S8  - IMS delta/interpolation value
+  ImsDeltaOld: number;    // S8  - IMS previous delta value
+  ImsFSpeed: number;      // S16 - IMS frequency modulation speed
+  ImsFLen1: number;       // U16 - IMS frequency length counter
+  ImsFLen2: number;       // U16 - IMS frequency length reset value
+  ImsDolby: number;       // U8  - IMS surround sound flag
+
+  // AddBegin vibrato
+  AddBeginCount1: number; // U8 - AddBegin counter
+  AddBeginCount2: number; // U8 - AddBegin counter reset value
+
+  // Riff playback
+  RiffStats: number;      // U8 - Riff status
+  RiffMacro: number;      // U8 - Riff macro number
+  RiffSpeed: number;      // U16 - Riff speed
+  RiffCount: number;      // U16 - Riff counter
+  RiffTrigg: number;      // U8 - Riff trigger flag
+  RiffAND: number;        // U8 - Riff AND mask
+
+  // Skip command
+  SkipFlag: number;       // U8 - Skip flag for 0x30 command
 
   hwIdx: number;          // index into hdb[] (replaces pointer)
 }
