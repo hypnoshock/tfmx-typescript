@@ -6,6 +6,7 @@
  * into a TFMXData structure ready for the player engine.
  */
 
+import { md5 } from 'js-md5';
 import type { Hdr, TFMXData } from './types';
 import { HEADER_SIZE, TFMX_MAGIC_STRINGS } from './constants';
 
@@ -13,6 +14,8 @@ import { HEADER_SIZE, TFMX_MAGIC_STRINGS } from './constants';
  * Parse an MDAT ArrayBuffer and SMPL ArrayBuffer into TFMXData.
  */
 export function parseTFMX(mdatBuffer: ArrayBuffer, smplBuffer: ArrayBuffer): TFMXData {
+  // Calculate MD5 hash of MDAT file for automatic module detection
+  const mdatHash = md5(mdatBuffer);
   const mdatView = new DataView(mdatBuffer);
   const mdatBytes = new Uint8Array(mdatBuffer);
 
@@ -176,6 +179,7 @@ export function parseTFMX(mdatBuffer: ArrayBuffer, smplBuffer: ArrayBuffer): TFM
     numPatterns,
     numMacros,
     numTracksteps,
+    mdatHash,
   };
 }
 

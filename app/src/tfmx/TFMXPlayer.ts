@@ -13,6 +13,9 @@ import type {
 import { UNI, toS8, toS16, toS32 } from './types';
 import { NOTEVALS, DEFAULT_ECLOCKS } from './constants';
 
+const GEM_X_TITLE = '0974b4aa567b10d739ddba870865962a';
+const GEM_X_INGAME = '327277cfe82d3ee267e0baeee6610020';
+
 export class TFMXPlayer {
   // --- Player state (ported from globals in player.c) ---
   hdb: Hdb[] = [];
@@ -227,6 +230,13 @@ export class TFMXPlayer {
   // --- Load module data ---
   loadData(data: TFMXData): void {
     this.data = data;
+
+    // Automatically detect Gem'X module by MD5 hash
+    if (data.mdatHash === GEM_X_INGAME || data.mdatHash === GEM_X_TITLE) {
+      this.gemx = 1;
+    } else {
+      this.gemx = 0;
+    }
   }
 
   // --- Helper to read a 32-bit word from editbuf ---

@@ -208,6 +208,7 @@ export interface TFMXData {
   numPatterns: number;
   numMacros: number;
   numTracksteps: number;
+  mdatHash?: string;       // MD5 hash of MDAT file for automatic module detection
 }
 
 /**
